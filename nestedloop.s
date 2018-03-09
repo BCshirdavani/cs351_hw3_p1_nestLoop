@@ -16,7 +16,7 @@ return: .word 0
 blank: .asciz "_"
 star: .asciz "*"
 formatStr: .asciz "%d"
-
+newline: .asciz "\n"
 
 /* Code Section */
 
@@ -27,8 +27,8 @@ main:
 	str lr, [r1]
 	
 loopRow:
-	ldr r0, addrOfBlank	/* print leading blank	*/
-	bl printf		/* print leading blank	*/		
+	ldr r0, addrOfNewline	/* print newline for each row	*/
+	bl printf		/* print newline for each row	*/		
 	ldr r3, addrOfI		/* i++	*/
 	ldr r5, [r3]		/* i++	*/
 	add r5, r5, #1		/* i++	*/
@@ -49,3 +49,4 @@ addrOfReturn: .word return
 addrOfBlank: .word blank
 addrOfStar: .word star
 addrOfFormatStr: .word formatStr
+addrOfNewline: .word newline
