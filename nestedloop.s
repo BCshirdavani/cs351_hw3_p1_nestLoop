@@ -10,10 +10,11 @@
 
 /* Data Section */
 .data
-i: .word 0
-j: .word 0
+i: .word 1
+j: .word 1
 return: .word 0
 blank: .asciz "_"
+blankO: .asciz "-"
 star: .asciz "*"
 formatStr: .asciz "%d"
 newline: .asciz "\n"
@@ -24,103 +25,118 @@ newline: .asciz "\n"
 main:
 	ldr r1, addrOfReturn
 	str lr, [r1]
-loopRow:
-	ldr r3, addrOfI		/* j = i for inner col loop	*/
-	ldr r4, [r3]		/* j = i for inner col loop	*/
-	ldr r3, addrOfJ		/* j = i for inner col loop	*/
-	str r4, [r3]		/* j = i for inner col loop	*/
-	bl loopLblank		/* send to loop for leading blanks	*/
+    b test_1
 
-	@ if (i <= (2*i-1) : go to loop for inner pyramid
-	ldr r7, addrOfI
-	ldr r8, [r7]	
-	@ mul r8, r8, #2	/* 	2*i		*/
-	@ add r8, #0, r8, LSL #1	/* 	2*i		*/
-	mov r8, r8, LSL #1	/* 	2*i		*/
-	sub r8, r8, #1	/* 	2*i-1	*/
-	ldr r9, addrOfJ
-	ldr r10, [r9]
-	cmp r10, r8
-	ble inPYRloop	/*	loop while j <= 2*i-1	*/
+@ first outer loop, ROWS
+loop_1:
+    @ ldr r1, addrOfReturn
+	@ str lr, [r1]
+    @ reset j = i for loop_2
+    ldr r5, addrOfI
+    ldr r6, [r5] 
+    ldr r7, addrOfJ
+    str r6, [r7]
+    b test_2
 
-	ldr r0, addrOfNewline	/* print newline for each row	*/
-	bl printf		    /* print newline for each row	*/		
-	ldr r3, addrOfI		/* i++	*/
-	ldr r5, [r3]		/* i++	*/
-	add r5, r5, #1		/* i++	*/
-	str r5, [r3]
-	ldr r2, addrOfJ		/* j = i for inner col loop	*/
-	str r5, [r2]		/* j = i for inner col loop	*/
-	cmp r5, #8		    /* (i < 8)	*/
-	blt loopRow	
-    b beforeend
-
-	@ inner pyramid loop
-	inPYRloop:
-		@ if (i == 8) print star
-		ldr r5, addrOfI
-		ldr r6, [r5]
-		cmp r6, #8
-		beq starPRINTER
-		@ if (j == 1) print star
-		ldr r5, addrOfJ
-		ldr r6, [r5]
-		cmp r6, #1
-		beq starPRINTER
-		@ if (j == 2*i-1) print star
-		ldr r5, addrOfJ
-		ldr r6, [r5] 
-		ldr r7, addrOfI
-		ldr r8, [r7]
-		@ mul r8, r8, #2
-		@ add r8, #0, r8, LSL #1	/* 	2*i		*/
-		mov r8, r8, LSL #1	/* 	2*i		*/
-		sub r8, r8, #1
-		cmp r6, r8
-		beq starPRINTER
-		@ else print blank
-		push {lr}
-		ldr r0, addrOfBlank
-		bl printf
-		pop {lr}
-		endINpyramid:
-		b end
-
-			@ print stars from conditions of inner loop
-			starPRINTER:
-				push {lr}
-				ldr r0, addrOfStar
-				bl printf
-				pop {lr}
-				b endINpyramid 	/*	exit the inner loop, without printing spaces	*/
-
-loopLblank:
+    loop_2:
+        @ print blank
+        ldr r0, addrOfBlankO
         push {lr}
-        ldr r0, addrOfBlank     /* load blank char      */
-        bl printf               /* print blank          */
+        bl printf
         pop {lr}
+        @ j++
+        ldr r5, addrOfJ
+        ldr r6, [r5]
+        add r6, r6, #1
+        str r6, [r5]
 
-        ldr r3, addrOfJ         /* j++  */
-        ldr r5, [r3]            /* j++  */
-        add r5, r5, #1          /* j++  */
-        str r5, [r3]
-        cmp r5, #8              /* (j < 8)      */
-        blt loopLblank
+    test_2:
+        @ if j < 8
+        ldr r5, addrOfJ
+        ldr r6, [r5]
+        cmp r6, #8
+        blt loop_2
 
-        @ printPYRAMID:
-        @         push {lr}
-        @         ldr r0, addrOfStar
-        @         bl printf
-        @         pop {lr}
+    @ j = 1 , to start final loop
+    ldr r5, addrOfJ
+    ldr r6, [r5]
+    mov r6, #1
+    str r6, [r5]
+    b test_3
 
-        b end
+    loop_3:
+        ldr r5, addrOfI
+        ldr r6, [r5]
+        ldr r7, addrOfJ
+        ldr r8, [r7]
+
+        @ cond_1: (i == rows)
+        cmp r6, #8
+        beq starPrint
+        @ cond_2: (j == 1)
+        cmp r8, #1
+        beq starPrint
+        @ cond_3: (j == 2*i-1)
+        cmp r7, r8
+        beq starPrint
+        @ cond_else: print blank, and skip starPrint
+        ldr r0, addrOfBlank
+        push {lr}
+        bl printf
+        pop {lr}
+        @ j++
+        ldr r5, addrOfJ
+        ldr r6, [r5]
+        add r6, r6, #1
+        str r6, [r5]
+        b test_3
+
+        starPrint:
+            @ print the star
+            ldr r0, addrOfStar
+            push {lr}
+            bl printf
+            pop {lr}
+            @ j++
+            ldr r5, addrOfJ
+            ldr r6, [r5]
+            add r6, r6, #1
+            str r6, [r5]
 
 
-beforeend:
-    ldr r1, addrOfReturn
-    ldr lr, [r1]
-	
-	/* finish the inner pyramid conditionals here */
+    test_3:
+        @ for(j = 1; j <= (2*i-1); j++)
+        ldr r5, addrOfJ
+        ldr r6, [r5]
+        @ (2 * i - 1)
+        ldr r7, addrOfI
+        ldr r8, [r7]
+        mov r8, r8, LSL #1
+        sub r8, r8, #1 
+        @ if ( j <= 2*i-1 )
+        cmp r6, r8
+        ble loop_3
+
+
+    @ print newline
+    ldr r0, addrOfNewline
+    push {lr}
+    bl printf
+    pop {lr}
+    @ i++
+    ldr r5, addrOfI
+    ldr r6, [r5]
+    add r6, r6, #1
+    str r6, [r5]
+
+@ test for ROW loop
+test_1:
+    @ was i < 8, changed to <= 8
+    @ if i <= 8
+    ldr r5, addrOfI
+    ldr r6, [r5]
+    cmp r6, #8
+    ble loop_1  @ was blt, now ble
 
 end:
     bx lr
@@ -131,6 +147,7 @@ addrOfI: .word i
 addrOfJ: .word j
 addrOfReturn: .word return
 addrOfBlank: .word blank
+addrOfBlankO: .word blankO
 addrOfStar: .word star
 addrOfFormatStr: .word formatStr
 addrOfNewline: .word newline
